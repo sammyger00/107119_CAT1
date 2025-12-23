@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../parcel/presentation/screens/new_booking_screen.dart';
+import '../../../../core/storage/user_storage.dart';
+import '../../../../core/storage/secure_storage.dart';
 
 class CustomerDashboardScreen extends StatefulWidget {
   const CustomerDashboardScreen({super.key});
@@ -1094,8 +1096,32 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
 }
 
 // Profile Screen
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  UserData? _userData;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final userData = await UserStorage().getUser();
+    if (mounted) {
+      setState(() {
+        _userData = userData;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1113,156 +1139,188 @@ class ProfileScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Profile Header
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Theme.of(context).primaryColor,
-                    Theme.of(context).primaryColor.withOpacity(0.8),
-                  ],
-                ),
-              ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
               child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundColor: Colors.white,
-                    child: Icon(
-                      Icons.person,
-                      size: 50,
-                      color: Theme.of(context).primaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'John Doe',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '+254 712 345 678',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white.withOpacity(0.9),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'johndoe@email.com',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withOpacity(0.8),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Stats Row
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildStatCard(context, '12', 'Total\nShipments', Icons.local_shipping),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildStatCard(context, '3', 'In\nTransit', Icons.pending_actions),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildStatCard(context, '9', 'Delivered', Icons.check_circle),
-                  ),
-                ],
-              ),
-            ),
-
-            // Menu Items
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                children: [
-                  _buildMenuItem(
-                    context,
-                    Icons.person_outline,
-                    'Personal Information',
-                    'Update your personal details',
-                    () => _showComingSoon(context, 'Personal Information'),
-                  ),
-                  _buildMenuItem(
-                    context,
-                    Icons.location_on_outlined,
-                    'Saved Addresses',
-                    'Manage your delivery addresses',
-                    () => _showComingSoon(context, 'Saved Addresses'),
-                  ),
-                  _buildMenuItem(
-                    context,
-                    Icons.payment,
-                    'Payment Methods',
-                    'Manage your payment options',
-                    () => _showComingSoon(context, 'Payment Methods'),
-                  ),
-                  _buildMenuItem(
-                    context,
-                    Icons.notifications_outlined,
-                    'Notifications',
-                    'Configure notification preferences',
-                    () => _showComingSoon(context, 'Notifications'),
-                  ),
-                  _buildMenuItem(
-                    context,
-                    Icons.security,
-                    'Security',
-                    'Password and security settings',
-                    () => _showComingSoon(context, 'Security'),
-                  ),
-                  _buildMenuItem(
-                    context,
-                    Icons.help_outline,
-                    'Help & Support',
-                    'Get help or contact us',
-                    () => _showComingSoon(context, 'Help & Support'),
-                  ),
-                  _buildMenuItem(
-                    context,
-                    Icons.info_outline,
-                    'About',
-                    'App version and information',
-                    () => _showAboutDialog(context),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
+                  // Profile Header
+                  Container(
                     width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () => _showLogoutDialog(context),
-                      icon: const Icon(Icons.logout, color: Colors.red),
-                      label: const Text('Log Out', style: TextStyle(color: Colors.red)),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.red),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Theme.of(context).primaryColor,
+                          Theme.of(context).primaryColor.withOpacity(0.8),
+                        ],
                       ),
                     ),
+                    child: Column(
+                      children: [
+                        CircleAvatar(
+                          radius: 50,
+                          backgroundColor: Colors.white,
+                          child: Text(
+                            _getInitials(_userData?.name ?? 'U'),
+                            style: TextStyle(
+                              fontSize: 36,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _userData?.name ?? 'User',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _userData?.phoneNumber ?? '',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white.withOpacity(0.9),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _userData?.email ?? '',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white.withOpacity(0.8),
+                          ),
+                        ),
+                        if (_userData?.stationName != null) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              _userData!.stationName!,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 24),
+
+                  // Stats Row
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatCard(context, '0', 'Total\nShipments', Icons.local_shipping),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildStatCard(context, '0', 'In\nTransit', Icons.pending_actions),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildStatCard(context, '0', 'Delivered', Icons.check_circle),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Menu Items
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: [
+                        _buildMenuItem(
+                          context,
+                          Icons.person_outline,
+                          'Personal Information',
+                          'Update your personal details',
+                          () => _showComingSoon(context, 'Personal Information'),
+                        ),
+                        _buildMenuItem(
+                          context,
+                          Icons.location_on_outlined,
+                          'Saved Addresses',
+                          'Manage your delivery addresses',
+                          () => _showComingSoon(context, 'Saved Addresses'),
+                        ),
+                        _buildMenuItem(
+                          context,
+                          Icons.payment,
+                          'Payment Methods',
+                          'Manage your payment options',
+                          () => _showComingSoon(context, 'Payment Methods'),
+                        ),
+                        _buildMenuItem(
+                          context,
+                          Icons.notifications_outlined,
+                          'Notifications',
+                          'Configure notification preferences',
+                          () => _showComingSoon(context, 'Notifications'),
+                        ),
+                        _buildMenuItem(
+                          context,
+                          Icons.security,
+                          'Security',
+                          'Password and security settings',
+                          () => _showComingSoon(context, 'Security'),
+                        ),
+                        _buildMenuItem(
+                          context,
+                          Icons.help_outline,
+                          'Help & Support',
+                          'Get help or contact us',
+                          () => _showComingSoon(context, 'Help & Support'),
+                        ),
+                        _buildMenuItem(
+                          context,
+                          Icons.info_outline,
+                          'About',
+                          'App version and information',
+                          () => _showAboutDialog(context),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () => _showLogoutDialog(context),
+                            icon: const Icon(Icons.logout, color: Colors.red),
+                            label: const Text('Log Out', style: TextStyle(color: Colors.red)),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Colors.red),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
     );
+  }
+
+  String _getInitials(String name) {
+    final parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    } else if (parts.isNotEmpty && parts[0].isNotEmpty) {
+      return parts[0][0].toUpperCase();
+    }
+    return 'U';
   }
 
   Widget _buildStatCard(BuildContext context, String value, String label, IconData icon) {
@@ -1362,10 +1420,16 @@ class ProfileScreen extends StatelessWidget {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Navigate to login screen
-              Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+            onPressed: () async {
+              // Clear user data and token
+              await SecureStorage().clear();
+              await UserStorage().clear();
+
+              if (context.mounted) {
+                Navigator.pop(context);
+                // Navigate to login screen
+                Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Log Out'),

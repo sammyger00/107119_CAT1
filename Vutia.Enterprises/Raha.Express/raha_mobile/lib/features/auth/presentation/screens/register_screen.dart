@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/storage/secure_storage.dart';
+import '../../../../core/storage/user_storage.dart';
 import '../../../customer/presentation/screens/customer_dashboard_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -62,6 +63,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
           // Save the token
           final token = response.data['data']['token'];
           await SecureStorage().saveToken(token);
+
+          // Save user data
+          final userData = response.data['data']['user'];
+          await UserStorage().saveUser(userData);
 
           if (mounted) {
             // Show success message
