@@ -1,4 +1,10 @@
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import '../../../../core/network/dio_client.dart';
+import '../../../../core/constants/api_constants.dart';
+import '../../../../core/storage/secure_storage.dart';
+import '../../../customer/presentation/screens/customer_dashboard_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -34,16 +40,96 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
 
-      // TODO: Implement actual registration logic
-      await Future.delayed(const Duration(seconds: 2));
+      try {
+        // Get device name for token identification
+        final deviceName = Platform.isAndroid ? 'Android' : 'iOS';
 
-      setState(() => _isLoading = false);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registration functionality coming soon')),
+        // Call the register API
+        final response = await DioClient().post(
+          ApiConstants.register,
+          data: {
+            'name': _nameController.text.trim(),
+            'email': _emailController.text.trim(),
+            'phone_number': _phoneController.text.trim(),
+            'password': _passwordController.text,
+            'password_confirmation': _confirmPasswordController.text,
+            'user_type': _userType,
+            'device_name': '$deviceName Mobile App',
+          },
         );
+
+        if (response.statusCode == 201 && response.data['success'] == true) {
+          // Save the token
+          final token = response.data['data']['token'];
+          await SecureStorage().saveToken(token);
+
+          if (mounted) {
+            // Show success message
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Registration successful! Welcome to Raha Express.'),
+                backgroundColor: Colors.green,
+              ),
+            );
+
+            // Navigate to customer dashboard
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) => const CustomerDashboardScreen(),
+              ),
+              (route) => false,
+            );
+          }
+        } else {
+          _showError(response.data['message'] ?? 'Registration failed');
+        }
+      } on DioException catch (e) {
+        String errorMessage = 'Registration failed. Please try again.';
+
+        if (e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.receiveTimeout) {
+          errorMessage = 'Connection timed out. Please check your internet.';
+        } else if (e.type == DioExceptionType.connectionError) {
+          errorMessage = 'No internet connection. Please check your network.';
+        } else if (e.response != null) {
+          // Server responded with an error
+          final data = e.response?.data;
+          if (data is Map && data['message'] != null) {
+            errorMessage = data['message'];
+          } else if (data is Map && data['errors'] != null) {
+            // Validation errors
+            final errors = data['errors'] as Map;
+            final errorMessages = <String>[];
+            errors.forEach((key, value) {
+              if (value is List && value.isNotEmpty) {
+                errorMessages.add(value.first.toString());
+              }
+            });
+            if (errorMessages.isNotEmpty) {
+              errorMessage = errorMessages.join('\n');
+            }
+          }
+        }
+
+        _showError(errorMessage);
+      } catch (e) {
+        _showError('An unexpected error occurred. Please try again.');
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       }
+    }
+  }
+
+  void _showError(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -100,6 +186,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // Name Field
                 TextFormField(
                   controller: _nameController,
+                  textCapitalization: TextCapitalization.words,
                   decoration: const InputDecoration(
                     labelText: 'Full Name',
                     hintText: 'Enter your full name',
@@ -108,6 +195,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your name';
+                    }
+                    if (value.trim().length < 2) {
+                      return 'Name must be at least 2 characters';
                     }
                     return null;
                   },
@@ -127,7 +217,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your email';
                     }
-                    if (!value.contains('@')) {
+                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
                       return 'Please enter a valid email';
                     }
                     return null;
@@ -141,12 +231,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   keyboardType: TextInputType.phone,
                   decoration: const InputDecoration(
                     labelText: 'Phone Number',
-                    hintText: 'Enter your phone number',
+                    hintText: 'e.g., 0712345678',
                     prefixIcon: Icon(Icons.phone_outlined),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your phone number';
+                    }
+                    // Basic phone validation for Kenyan numbers
+                    final phone = value.replaceAll(RegExp(r'[^\d]'), '');
+                    if (phone.length < 9 || phone.length > 12) {
+                      return 'Please enter a valid phone number';
                     }
                     return null;
                   },

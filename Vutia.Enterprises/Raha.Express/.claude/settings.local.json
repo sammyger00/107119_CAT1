@@ -49,7 +49,10 @@
       "Bash(tasklist:*)",
       "Bash(flutter build:*)",
       "Bash(flutter --version:*)",
-      "Bash(flutter install:*)"
+      "Bash(flutter install:*)",
+      "Bash(git rm:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd Flutter mobile app with parcel operations and payment integration\n\n- Implement courier dashboard with parcel status tabs \\(Sent, Loaded, Offloaded, Received, Issued\\)\n- Add parcel operations: load, offload, receive, issue with confirmation dialogs\n- Integrate M-Pesa and Family Bank STK Push payment processing\n- Add login screen supporting email, phone, or username authentication\n- Update backend AuthController to accept flexible login credentials\n- Add test credentials seeder with proper Active status\n- Include parcel, payment, and station services with API integration\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd user registration API endpoint and test credentials seeder\n\n- Add register\\(\\) method to AuthController for new user signup\n- Add public POST /api/v1/auth/register route\n- Update login to accept email, phone number, or username\n- Add TestCredentialsSeeder with test users for all roles\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }
